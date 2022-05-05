@@ -12,11 +12,14 @@ def main():
     font_zagl = pygame.font.SysFont('Arial', 50)
     text_menu = ["Сетевая игра", "Выход"]
     menu_butts = [multiplayer_menu.Button(text_menu[i], config.WHITE) for i in range(len(text_menu))]
+    background = pygame.image.load('images/sea.png')
+    background_rect = background.get_rect(topleft=(0,0))
 
     in_menu = True
     while in_menu:
         clock.tick(config.FPS)
         screen.fill(config.BLACK)
+        screen.blit(background, background_rect)
         pos_mouse = pygame.mouse.get_pos()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

@@ -36,6 +36,9 @@ def listen(s: socket.socket, host: str, port: int, members_on_server, game_on):
                 if who == i[0]:
                     i[1] = True
 
+        if msg == '__iamready':
+            game_second_player.enemy_ready_test = True
+
         if msg.startswith('__hi'):
             port_name = msg.split(' ')[-1]
             print(f'hi from client{port_name}')

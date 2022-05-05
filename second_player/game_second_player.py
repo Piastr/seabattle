@@ -12,6 +12,8 @@ pos_ships_mine_attack_test = [-1, -1]
 get_pos_enemy_ship_test = True
 game_running_test = True
 my_turn_test = False
+enemy_ready_test = False
+
 class Block:
     def __init__(self, rect, color, size):
         self.rect = rect
@@ -105,7 +107,7 @@ def game(running, enemy_port, s, turn):
     ready_button = [Button("Я готов", config.BLUE), False]
     leave_button = [Button("Я Проиграл", config.BLUE), False]
     rasstanovka_korabley_test = True
-    global list_rects_mine_test, list_rects_enemy_test
+    global list_rects_mine_test, list_rects_enemy_test, enemy_ready_test, my_turn_test
     list_rects_mine_test = [[], [], [], [], [], [], [], [], [], []]
     list_rects_enemy_test = [[], [], [], [], [], [], [], [], [], []]
 
@@ -113,13 +115,14 @@ def game(running, enemy_port, s, turn):
         for j in range(10):
             list_rects_mine_test[i].append(Block(pygame.Rect((50 + i * 30, 50 + j * 30, 30, 30)), config.BLACK, 1))
             list_rects_enemy_test[i].append(Block(pygame.Rect((450 + i * 30, 50 + j * 30, 30, 30)), config.BLACK, 1))
-    global my_turn_test
     my_turn_test = turn
     last_hit = [pos_ships_enemy_attack_test[0], pos_ships_enemy_attack_test[1]]
     while running:
         screen.fill(config.WHITE)
         clock.tick(config.FPS)
         pos_mouse = pygame.mouse.get_pos()
+        if rasstanovka_korabley_test and enemy_ready_test:
+            screen.blit(font.render('Враг готов', True, config.BLACK), (200, 400))
         screen.blit(leave_button[0].render(100, 500, font)[0], leave_button[0].render(100, 500, font)[1])
         if my_turn_test:
             screen.blit(font.render('Мой ход', True, config.BLACK), (100, 450))
@@ -127,11 +130,14 @@ def game(running, enemy_port, s, turn):
             screen.blit(font.render('Ход врага', True, config.BLACK), (100, 450))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return False
+                s.sendto('__youwin'.encode('ascii'), sendto)
+                running = False
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if rasstanovka_korabley_test:
                     if ready_button[0].__dict__['rect'].collidepoint(pos_mouse):
                         rasstanovka_korabley_test = False
+                        s.sendto('__iamready'.encode('ascii'), sendto)
+                        enemy_ready_test = False
                         ready_button.clear()
                 if leave_button[0].__dict__['rect'].collidepoint(pos_mouse):
                     s.sendto('__youwin'.encode('ascii'), sendto)

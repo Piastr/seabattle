@@ -25,6 +25,8 @@ def listen(s: socket.socket, host: str, port: int, members_on_server, game_on):
                 for n, member in enumerate(content.split(';'), start=1):
                     if member not in members_on_server:
                         # [имя, предложили ли он вам сыграть]
+                        if member == '':
+                            continue
                         user = [member, False]
                         members_on_server.append(user)
 
@@ -35,6 +37,8 @@ def listen(s: socket.socket, host: str, port: int, members_on_server, game_on):
                 if who == i[0]:
                     i[1] = True
 
+        if msg == '__iamready':
+            game.enemy_ready = True
 
         if msg.startswith('__ok'):
             game_on[0] = True
@@ -102,7 +106,8 @@ def multiplayer_menu(running, host, port):
     clock = pygame.time.Clock()
     pygame.display.update()
     font = pygame.font.SysFont('Arial', 25)
-
+    background = pygame.image.load('images/sea.png')
+    background_rect = background.get_rect(topleft=(0,0))
     interactive_text = ["Назад", "Обновить"]
     buttons = [Button(interactive_text[i], config.WHITE) for i in range(len(interactive_text))]
     own_port = random.randint(3000, 4000)
@@ -124,13 +129,13 @@ def multiplayer_menu(running, host, port):
     while running:
 
         clock.tick(config.FPS)
-        screen.fill(config.BLACK)
         pos_mouse = pygame.mouse.get_pos()
 
         # отрисовка кнопок и надписей
+        screen.blit(background, background_rect)
         screen.blit(buttons[0].render(20, 10, font)[0], buttons[0].render(20, 10, font)[1])
         screen.blit(font.render(static_text[0], True, config.BLUE), (20, 250))
-        screen.blit(font.render(f'client{own_port}', True, config.GREEN), (20, 290))
+        screen.blit(font.render(f'client{own_port}', True, config.BLACK), (20, 290))
         screen.blit(buttons[1].render(300, 10, font)[0], buttons[1].render(300, 10, font)[1])
         screen.blit(font.render(static_text[1], True, config.BLUE), (450, 10))
 
@@ -146,6 +151,7 @@ def multiplayer_menu(running, host, port):
             for i in range(len(memb_butt)):
                 screen.blit(memb_butt[i].render(525, 50 + i * 50, font)[0],
                             memb_butt[i].render(525, 50 + i * 50, font)[1])
+                pygame.draw.line(screen, config.WHITE, [275, 75 + i * 50], [800, 75 + i * 50])
                 screen.blit(go_button[i].render(300, 50 + i * 50, font)[0],
                             memb_butt[i].render(300, 50 + i * 50, font)[1])
                 screen.blit(ok_button[i].render(375, 50 + i * 50, font)[0],
@@ -169,7 +175,6 @@ def multiplayer_menu(running, host, port):
                             if x == 'Обновить':
                                 s.sendto('__members'.encode('ascii'), sendto)
                                 pass
-
                 for i in range(len(members_on_server)):
                     if go_button[i].__dict__['rect'].collidepoint(pos_mouse):
                         s.sendto(f'__inwait {members_on_server[i][0]}'.encode('ascii'), sendto)
@@ -181,10 +186,11 @@ def multiplayer_menu(running, host, port):
                             ok_button[i].__dict__['color'] = config.BLACK
                             no_button[i].__dict__['color'] = config.BLACK
                     if ok_button[i].__dict__['rect'].collidepoint(pos_mouse):
-                        s.sendto(f'__ok {members_on_server[i][0]}'.encode('ascii'), sendto)
-                        game_on[0] = True
-                        game_on[1] = members_on_server[i][0][-4:]
-                        game_on[2] = True
+                        if members_on_server[i][1]:
+                            s.sendto(f'__ok {members_on_server[i][0]}'.encode('ascii'), sendto)
+                            game_on[0] = True
+                            game_on[1] = members_on_server[i][0][-4:]
+                            game_on[2] = True
 
         for i in buttons:
             if i.__dict__['rect'].collidepoint(pos_mouse):
@@ -217,10 +223,12 @@ def multiplayer_menu(running, host, port):
                     else:
                         no_button[i].__dict__['color'] = config.WHITE
                         pygame.display.update()
+
         if game_on[0]:
             allowed_ports.append(int(game_on[1]))
             game_on[0] = game.game(True, int(game_on[1]), s, game_on[2])
 
+        print(members_on_server)
 
 if __name__ == '__main__':
     multiplayer_menu(True, '127.0.0.1', 2000)

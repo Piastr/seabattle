@@ -13,7 +13,7 @@ pos_ships_mine_attack = [-1, -1]
 get_pos_enemy_ship = True
 my_turn = False
 game_running = True
-
+enemy_ready = False
 
 class Block:
     def __init__(self, rect, color, size):
@@ -108,14 +108,13 @@ def game(running, enemy_port, s, turn):
     ready_button = [Button("Я готов", config.BLUE), False]
     leave_button = [Button("Я сдаюсь", config.BLUE), False]
     rasstanovka_korabley = True
-    global list_rects_mine, list_rects_enemy
+    global list_rects_mine, list_rects_enemy, my_turn, enemy_ready
     list_rects_mine = [[], [], [], [], [], [], [], [], [], []]
     list_rects_enemy = [[], [], [], [], [], [], [], [], [], []]
     for i in range(10):
         for j in range(10):
             list_rects_mine[i].append(Block(pygame.Rect((50 + i * 30, 50 + j * 30, 30, 30)), config.BLACK, 1))
             list_rects_enemy[i].append(Block(pygame.Rect((450 + i * 30, 50 + j * 30, 30, 30)), config.BLACK, 1))
-    global my_turn
     my_turn = turn
     last_hit = [pos_ships_enemy_attack[0], pos_ships_enemy_attack[1]]
 
@@ -123,6 +122,8 @@ def game(running, enemy_port, s, turn):
         screen.fill(config.WHITE)
         clock.tick(config.FPS)
         pos_mouse = pygame.mouse.get_pos()
+        if rasstanovka_korabley and enemy_ready:
+            screen.blit(font.render('Враг готов', True, config.BLACK), (200, 400))
         screen.blit(leave_button[0].render(100, 500, font)[0], leave_button[0].render(100, 500, font)[1])
         if my_turn:
             screen.blit(font.render('Мой ход', True, config.BLACK), (100, 450))
@@ -130,11 +131,14 @@ def game(running, enemy_port, s, turn):
             screen.blit(font.render('Ход врага', True, config.BLACK), (100, 450))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return False
+                s.sendto('__youwin'.encode('ascii'), sendto)
+                running = False
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if rasstanovka_korabley:
                     if ready_button[0].__dict__['rect'].collidepoint(pos_mouse):
                         rasstanovka_korabley = False
+                        enemy_ready = False
+                        s.sendto('__iamready'.encode('ascii'), sendto)
                         ready_button.clear()
                 if leave_button[0].__dict__['rect'].collidepoint(pos_mouse):
                     s.sendto('__youwin'.encode('ascii'), sendto)
@@ -161,16 +165,20 @@ def game(running, enemy_port, s, turn):
                 last_hit[1] = pos_ships_enemy_attack[1]
                 ships_around = 0
                 if pos_ships_enemy_attack[0] != 0:
-                    if list_rects_mine[pos_ships_enemy_attack[0] - 1][pos_ships_enemy_attack[1]].alive == 3:
+                    if list_rects_mine[pos_ships_enemy_attack[0] - 1][
+                        pos_ships_enemy_attack[1]].alive == 3:
                         ships_around += 1
                 if pos_ships_enemy_attack[0] != 9:
-                    if list_rects_mine[pos_ships_enemy_attack[0] + 1][pos_ships_enemy_attack[1]].alive == 3:
+                    if list_rects_mine[pos_ships_enemy_attack[0] + 1][
+                        pos_ships_enemy_attack[1]].alive == 3:
                         ships_around += 1
                 if pos_ships_enemy_attack[1] != 0:
-                    if list_rects_mine[pos_ships_enemy_attack[0]][pos_ships_enemy_attack[1] - 1].alive == 3:
+                    if list_rects_mine[pos_ships_enemy_attack[0]][
+                        pos_ships_enemy_attack[1] - 1].alive == 3:
                         ships_around += 1
                 if pos_ships_enemy_attack[1] != 9:
-                    if list_rects_mine[pos_ships_enemy_attack[0]][pos_ships_enemy_attack[1] + 1].alive == 3:
+                    if list_rects_mine[pos_ships_enemy_attack[0]][
+                        pos_ships_enemy_attack[1] + 1].alive == 3:
                         ships_around += 1
 
                 if ships_around == 0:
